@@ -1,0 +1,10 @@
+*.bak
+*.elf
+*.o
+*.lnp
+*.M51
+*.plg
+*.uvgui.*
+*.uvopt
+*.LST
+*.ONJ
