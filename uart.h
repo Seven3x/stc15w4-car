@@ -19,7 +19,7 @@ extern  bit	    B_TX2_Busy;	//发送忙标志
 extern 	idata   RX1_Buffer[UART1_BUF_LENGTH];	//接收缓冲
 extern 	idata   RX2_Buffer[UART2_BUF_LENGTH];	//接收缓冲
 extern  SendBuf3[6], SendBuf4[6];
-extern  u8 RX2_Word;
+extern  u8 RX1_Word, RX2_Word, RX3_Word, RX4_Word;
 
 void	UART1_config(u8 brt);	// 选择波特率, 2: 使用Timer2做波特率, 其它值: 使用Timer1做波特率.
 void	UART2_config(u8 brt);	// 选择波特率, 2: 使用Timer2做波特率, 其它值: 无效.

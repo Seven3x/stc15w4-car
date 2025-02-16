@@ -12,18 +12,18 @@ bit	B_TX2_Busy;	//发送忙标志
 u8 	idata RX1_Buffer[UART1_BUF_LENGTH];	//接收缓冲
 u8 	idata RX2_Buffer[UART2_BUF_LENGTH];	//接收缓冲
 u8 SendBuf3[6], SendBuf4[6];
-u8 RX2_Word;
+u8 RX1_Word, RX2_Word, RX3_Word, RX4_Word;
 
 
 void UART3_config()
 {
 
-        S3CON = 0x50;//01010000 8位可变波特率，无奇偶校验，允许接收 ,选择定时器4作为波特率发生器         0x10=选择定时器2作为波特率发生器
+        S3CON = 0x10;//00010000 8位可变波特率，无奇偶校验，允许接收 ,选择定时器4作为波特率发生器         0x10=选择定时器2作为波特率发生器
 
-        T3H = (u8)((65536UL - (MAIN_Fosc / 4) / Baudrate1) / 256);;                //设定定时初值
-        T3L = (u8)((65536UL - (MAIN_Fosc / 4) / Baudrate1) % 256);;                //设定定时初值
+        // T3H = (u8)((65536UL - (MAIN_Fosc / 4) / Baudrate1) / 256);;                //设定定时初值
+        // T3L = (u8)((65536UL - (MAIN_Fosc / 4) / Baudrate1) % 256);;                //设定定时初值
 
-        T4T3M |= 0x0A;        ////定时器3时钟为Fosc,即1T ，启动定时器3，
+        // T4T3M |= 0x0A;        ////定时器3时钟为Fosc,即1T ，启动定时器3，
 
         IE2 |= 0x08;         //ES3 = 1;允许中断
         P_SW2=0x00;         //串口2、3、4的位置 RX3=P0.0 TX3=P0.1
@@ -33,13 +33,13 @@ void UART3_config()
 void UART4_config()
 {
 
-        S4CON = 0x50;//01010000 8位可变波特率，无奇偶校验，允许接收 ,选择定时器4作为波特率发生器        0x10=选择定时器2作为波特率发生器
+        S4CON = 0x10;//01010000 8位可变波特率，无奇偶校验，允许接收 ,选择定时器4作为波特率发生器        0x10=选择定时器2作为波特率发生器
 
-        T4H = 0xFE;                //设定定时初值
-        T4L = 0xE0;                //设定定时初值
+        // T4H = (u8)((65536UL - (MAIN_Fosc / 4) / Baudrate1) / 256);;                //设定定时初值
+        // T4L = (u8)((65536UL - (MAIN_Fosc / 4) / Baudrate1) % 256);;                //设定定时初值
 
 
-        T4T3M |= 0xA0;        ////定时器3时钟为Fosc,即1T ，启动定时器3，
+        // T4T3M |= 0xA0;        ////定时器3时钟为Fosc,即1T ，启动定时器3，
 
         IE2 |= 0x10;         //ES4 = 1;
         P_SW2=0x00;         //串口2、3、4的位置 RX4=P0.2 TX4=P0.3
@@ -66,8 +66,6 @@ void send_UART3()
         }
 
 }
-
-
 void send_UART4()
 {
 	unsigned char temp = 0, i=0;
@@ -85,8 +83,6 @@ void send_UART4()
         }
 
 }
-
-
 
 //========================================================================
 // 函数: void PrintString1(u8 *puts)

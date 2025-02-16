@@ -48,13 +48,20 @@ void main(void)
 
 	UART1_config(1);	// 选择波特率, 2: 使用Timer2做波特率, 其它值: 使用Timer1做波特率.
 	UART2_config(2);	// 选择波特率, 2: 使用Timer2做波特率, 其它值: 无效.
+	UART3_config();
+	UART4_config();
 	EA = 1;				//允许全局中断
 
 	
 	PrintString1("STC15F2K60S2 UART1 Test Prgramme!\r\n");	//SUART1发送一个字符串
 	PrintString2("STC15F2K60S2 UART2 Test Prgramme!\r\n");	//SUART2发送一个字符串
 
-	while(1);
+	while(1){
+		// P20 = 0;
+		// delay_ms(1000);
+		// P20 = 1;
+		// delay_ms(1000);
+	}
 }
 
 
@@ -111,7 +118,6 @@ void UART2_int (void) interrupt UART2_VECTOR
 		RX2_Word = S2BUF;
 		S2BUF=RX2_Word;
 		while(!(S2CON & 0x02));
-		if(++RX2_Cnt >= UART2_BUF_LENGTH)	RX2_Cnt = 0;
 	}
 
 	if((S2CON & 2) != 0)
@@ -131,6 +137,9 @@ void UART3_Interrupt_Receive(void) interrupt UART3_VECTOR
         if(k == 1)
         {
 			S3CON = S3CON & 0xfe;
+			RX3_Word = S3BUF;
+			S3BUF = RX3_Word;
+			while(!(S3CON & 0x02));
         }
 
 }
@@ -138,12 +147,17 @@ void UART3_Interrupt_Receive(void) interrupt UART3_VECTOR
 void UART4_Interrupt_Receive(void) interrupt UART4_VECTOR
 {
         unsigned char k = 0;
-
+		// P20 = 0;
         k = S4CON;
         k = k & 0x01;	//判断是否接收到数据
         if(k == 1)
         {
 			S4CON = S4CON & 0xfe; 		//清除接收标志
+			RX4_Word = S4BUF;
+			S4BUF = RX4_Word;
+			// P20 = 0;
+			while(!(S4CON & 0x02));		//等待发送完成
+			
         }
 
 }
