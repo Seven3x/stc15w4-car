@@ -1,0 +1,8 @@
+{
+    "files.encoding": "gb2312",
+    "files.associations": {
+        "uart.h": "c",
+        "stc15fxxxx.h": "c",
+        "STC15Fxxxx.H": "cpp"
+    }
+}
