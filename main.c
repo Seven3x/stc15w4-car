@@ -25,7 +25,7 @@ unsigned char rx3buf[20];	//uart3接收缓冲区
 unsigned char rx3count;
 unsigned char rx3state;
 
-unsigned int gpwm1, gpwm2;
+unsigned int gpwm1, gpwm2, gpwm3;
 
 void  delay_ms(u8 ms);
 /**
@@ -85,13 +85,14 @@ void main(void)
 			rx3state = 1;
 			gpwm1 =  rx3buf[3] / 20 + 2 ; //0.5ms-2.5ms 0.2ms一档
 			gpwm2 =  rx3buf[5] / 20 + 2;
-			if(rx3buf[6] == 0) {
+			gpwm3 =  rx3buf[7] / 20 + 2;
+			if(rx3buf[8] == 0) {
 				stop();
 			}
-			if(rx3buf[6] == 1) {
+			if(rx3buf[8] == 1) {
 				forward();
 			}
-			if(rx3buf[6] == 2) {
+			if(rx3buf[8] == 2) {
 				backward();
 			}
 			rx3state = 0;
@@ -103,9 +104,10 @@ void main(void)
 			msg[9] = gpwm2/10 + '0';
 			msg[10] = gpwm2%10 + '0';
 			msg[11] = ' ';
-			msg[12] = rx3buf[6] + '0';
-			msg[13] = '\n';
+			msg[12] = gpwm3/10 + '0';
+			msg[13] = gpwm3%10 + '0';
 			msg[14] = '\r';
+			msg[15] = '\n';
 			PrintString1(msg);
 		}
 	}
@@ -152,8 +154,12 @@ void timer0_int (void) interrupt TIMER0_VECTOR
 {
 	t0count ++;
 	P70= t0count < gpwm1;
+	
+	P17= t0count < gpwm2;
+	P16 = t0count < gpwm3;
+
 	P71= t0count < gpwm2;
-	P20 = t0count < gpwm1;
+	P72 = t0count < gpwm3;
 	if(t0count >= 100) { //20ms一周期
 		t0count = 0;
 	}
@@ -306,7 +312,7 @@ void UART3_Interrupt_Receive(void) interrupt UART3_VECTOR
 				S3BUF = 'P';
 				while(!(S3CON & 0x02));
 			}
-			if(rx3state == 1 && rx3count < 10) {
+			if(rx3state == 1 && rx3count < 12) {
 				rx3buf[rx3count] = RX3_Word;
 				rx3count++;
 				

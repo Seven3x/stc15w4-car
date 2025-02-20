@@ -63,7 +63,7 @@ char ssid[]="Roxy";//WiFi名称
 char pswd[]="153153153";//wifi密码
 bool setup_camera = false;
 
-unsigned char msg[8]={'A',0,0,0,0,0,'B',0};
+unsigned char msg[10]={'A',0,0,0,0,0,0,0,'B',0};
 
 BlinkerButton Button_forward("btn-forward");
 BlinkerButton Button_backward("btn-backward");
@@ -72,10 +72,11 @@ BlinkerText Txt_ip("txt-ip");
 
 BlinkerSlider Slider1("ran-1");
 BlinkerSlider Slider2("ran-2");
+BlinkerSlider Slider3("ran-3");
 
 HardwareSerial SerialPort(1);
 
-unsigned int g1=0, g2=0;
+unsigned int g1=50, g2=50, g3=50;
 unsigned char s = 0;
 
 int i = 0;
@@ -122,6 +123,12 @@ void slider2_callback(int32_t value)
   g2 = value;
 }
 
+void slider3_callback(int32_t value)
+{
+  g3 = value;
+}
+
+
 
 
 void setup()
@@ -136,6 +143,7 @@ void setup()
 
     Slider1.attach(slider1_callback);
     Slider2.attach(slider2_callback);
+    Slider3.attach(slider3_callback);
 
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -152,9 +160,11 @@ void loop()
     msg[2] = g1 % 256;
     msg[3] = g2 / 256;
     msg[4] = g2 % 256;
-    msg[5] = s;
+    msg[5] = g3 / 256;
+    msg[6] = g3 % 256;
+    msg[7] = s;
 
-    for(i = 0; i < 8; i ++) {
+    for(i = 0; i < 10; i ++) {
       SerialPort.write(msg[i]);
     }
 
@@ -163,8 +173,8 @@ void loop()
         setupCamera();
         setup_camera = true;
 //        String ip = String()+ WiFi.localIP()[0] + "." + WiFi.localIP()[1] + "." + WiFi.localIP()[2] + "." + WiFi.localIP()[3];
-        Blinker.print(Txt_ip, ip);
-
+//        Serial.println(Txt_ip, ip);
+        Txt_ip.print(WiFi.localIP().toString());
         Blinker.printObject("video", "{\"str\":\"mjpg\",\"url\":\"http://"+ WiFi.localIP().toString() + "\"}");
     }
 }

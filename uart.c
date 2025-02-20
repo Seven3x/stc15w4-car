@@ -181,7 +181,7 @@ void	UART1_config(u8 brt)
 	ES  = 1;	//允许中断
 	REN = 1;	//允许接收
 	P_SW1 &= 0x3f;
-	P_SW1 |= 0x80;		//UART1 switch to, 0x00: P3.0 P3.1, 0x40: P3.6 P3.7, 0x80: P1.6 P1.7 (必须使用内部时钟)
+	P_SW1 |= 0x00;		//UART1 switch to, 0x00: P3.0 P3.1, 0x40: P3.6 P3.7, 0x80: P1.6 P1.7 (必须使用内部时钟)
 //	PCON2 |=  (1<<4);	//内部短路RXD与TXD, 做中继, ENABLE,DISABLE
 
 	B_TX1_Busy = 0;
