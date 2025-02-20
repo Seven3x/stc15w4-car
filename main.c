@@ -14,12 +14,18 @@
 #define MAIN_Fosc		22118400L	//定义主时钟
 
 #include	"STC15Fxxxx.H"
+#include 	"stdio.h"
 #include	"uart.h"
 #include 	"PWM.h"
 #include 	"motor.h"
 
+#define        Timer0_Reload        (MAIN_Fosc / 10000)                //Timer 0 中断频率, 1000次/秒
 
+unsigned char rx3buf[20];	//uart3接收缓冲区
+unsigned char rx3count;
+unsigned char rx3state;
 
+unsigned int gpwm1, gpwm2;
 
 void  delay_ms(u8 ms);
 /**
@@ -28,6 +34,7 @@ void  delay_ms(u8 ms);
  * 
  */
 void PWM_config();
+void Timer0_init(void);
 
 //========================================================================
 // 函数: void main(void)
@@ -40,6 +47,7 @@ void PWM_config();
 //========================================================================
 void main(void)
 {
+	char msg[5];
 	P0M1 = 0;	P0M0 = 0;	//设置为准双向口
 	P1M1 = 0;	P1M0 = 0;	//设置为准双向口
 	P2M1 = 0;	P2M0 = 0;	//设置为准双向口
@@ -60,7 +68,7 @@ void main(void)
 	UART3_config();
 	UART4_config();
 	EA = 1;				//允许全局中断
-
+	P20=0;
 	
 	PrintString1("STC15F2K60S2 UART1 Test Prgramme!\r\n");	//SUART1发送一个字符串
 	PrintString2("STC15F2K60S2 UART2 Test Prgramme!\r\n");	//SUART2发送一个字符串
@@ -69,18 +77,87 @@ void main(void)
 	PWMx_SetPwmWide(PWM3_ID, 16, 155);
 	PWMx_SetPwmWide(PWM4_ID, 16, 155);
 	PWMx_SetPwmWide(PWM5_ID, 16, 155);
+	// Timer0_init();
 
 
 	while(1){
-		P20 = 0;
-		forward();
-		delay_ms(1000);
-		P20 = 1;
-		stop();
-		delay_ms(1000);
+		if (rx3state == 2) {
+			rx3state = 1;
+			gpwm1 =  rx3buf[3];
+			gpwm2 =  rx3buf[5];
+			if(rx3buf[6] == 0) {
+				stop();
+			}
+			if(rx3buf[6] == 1) {
+				forward();
+			}
+			if(rx3buf[6] == 2) {
+				backward();
+			}
+			rx3state = 0;
+			rx3count = 0;
+			sprintf(msg, "state:");
+			msg[6] = gpwm1/10 + '0';
+			msg[7] = gpwm1%10 + '0';
+			msg[8] = ' ';
+			msg[9] = gpwm2/10 + '0';
+			msg[10] = gpwm2%10 + '0';
+			msg[11] = ' ';
+			msg[12] = rx3buf[6] + '0';
+			msg[13] = '\n';
+			msg[14] = '\r';
+			PrintString1(msg);
+		}
 	}
 }
 
+
+void Timer0_init(void)
+{
+	TR0 = 0;        //停止计数
+	P20=1;
+
+	#if (Timer0_Reload < 64)        // 如果用户设置值不合适， 则不启动定时器
+		#error "Timer0设置的中断过快!"
+
+	#elif ((Timer0_Reload/12) < 65536UL)        // 如果用户设置值不合适， 则不启动定时器
+		ET0 = 1;        //允许中断
+//        PT0 = 1;        //高优先级中断
+		TMOD &= ~0x03;
+		TMOD |= 0;        //工作模式, 0: 16位自动重装, 1: 16位定时/计数, 2: 8位自动重装, 3: 16位自动重装, 不可屏蔽中断
+//        TMOD |=  0x04;        //对外计数或分频
+		TMOD &= ~0x04;        //定时
+//        INT_CLKO |=  0x01;        //输出时钟
+		INT_CLKO &= ~0x01;        //不输出时钟
+
+		#if (Timer0_Reload < 65536UL)
+				AUXR |=  0x80;        //1T mode
+				TH0 = (u8)((65536UL - Timer0_Reload) / 256);
+				TL0 = (u8)((65536UL - Timer0_Reload) % 256);
+		#else
+				AUXR &= ~0x80;        //12T mode
+				TH0 = (u8)((65536UL - Timer0_Reload/12) / 256);
+				TL0 = (u8)((65536UL - Timer0_Reload/12) % 256);
+		#endif
+
+		TR0 = 1;        //开始运行
+
+	#else
+			#error "Timer0设置的中断过慢!"
+	#endif
+}
+
+u32 t0count = 0;
+void timer0_int (void) interrupt TIMER0_VECTOR
+{
+	t0count ++;
+	P70=t0count < gpwm1;
+	P71=t0count < gpwm2;
+	P20 = t0count < 5000;
+	if(t0count > 10000) {
+		t0count = 0;
+	}
+}
 
 
 void PWM_config() {
@@ -215,10 +292,30 @@ void UART3_Interrupt_Receive(void) interrupt UART3_VECTOR
         k = k & 0x01;   //判断是否接收到数据
         if(k == 1)
         {
-			S3CON = S3CON & 0xfe;
+			
 			RX3_Word = S3BUF;
-			S3BUF = RX3_Word;
-			while(!(S3CON & 0x02));
+			if(RX3_Word == 'A' && rx3count == 0 && rx3state == 0) {
+				rx3state = 1;
+				rx3count++;
+				S3BUF = RX3_Word;
+				while(!(S3CON & 0x02));
+			}
+			if(RX3_Word == 'B' && rx3state == 1) {
+				rx3state = 2;
+				rx3count = 0;
+				S3BUF = 'P';
+				while(!(S3CON & 0x02));
+			}
+			if(rx3state == 1 && rx3count < 10) {
+				rx3buf[rx3count] = RX3_Word;
+				rx3count++;
+				
+				S3BUF = '0'+rx3count;
+				while(!(S3CON & 0x02));
+			}
+
+			S3CON = S3CON & 0xfe;
+
         }
 
 }
