@@ -19,7 +19,7 @@
 #include 	"PWM.h"
 #include 	"motor.h"
 
-#define        Timer0_Reload        (MAIN_Fosc / 10000)                //Timer 0 中断频率, 1000次/秒
+#define        Timer0_Reload        (MAIN_Fosc / 5000)                //Timer 0 中断频率, 1000次/秒
 
 unsigned char rx3buf[20];	//uart3接收缓冲区
 unsigned char rx3count;
@@ -68,7 +68,6 @@ void main(void)
 	UART3_config();
 	UART4_config();
 	EA = 1;				//允许全局中断
-	P20=0;
 	
 	PrintString1("STC15F2K60S2 UART1 Test Prgramme!\r\n");	//SUART1发送一个字符串
 	PrintString2("STC15F2K60S2 UART2 Test Prgramme!\r\n");	//SUART2发送一个字符串
@@ -77,14 +76,15 @@ void main(void)
 	PWMx_SetPwmWide(PWM3_ID, 16, 155);
 	PWMx_SetPwmWide(PWM4_ID, 16, 155);
 	PWMx_SetPwmWide(PWM5_ID, 16, 155);
-	// Timer0_init();
+	Timer0_init();
+	P20=0;
 
 
 	while(1){
 		if (rx3state == 2) {
 			rx3state = 1;
-			gpwm1 =  rx3buf[3];
-			gpwm2 =  rx3buf[5];
+			gpwm1 =  rx3buf[3] / 20 + 2 ; //0.5ms-2.5ms 0.2ms一档
+			gpwm2 =  rx3buf[5] / 20 + 2;
 			if(rx3buf[6] == 0) {
 				stop();
 			}
@@ -151,10 +151,10 @@ u32 t0count = 0;
 void timer0_int (void) interrupt TIMER0_VECTOR
 {
 	t0count ++;
-	P70=t0count < gpwm1;
-	P71=t0count < gpwm2;
-	P20 = t0count < 5000;
-	if(t0count > 10000) {
+	P70= t0count < gpwm1;
+	P71= t0count < gpwm2;
+	P20 = t0count < gpwm1;
+	if(t0count >= 100) { //20ms一周期
 		t0count = 0;
 	}
 }
